@@ -1,4 +1,5 @@
 const Bug = require('../models/Bug');
+const BugStateFactory = require('../domain/states/BugStateFactory');
 
 const createBug = async (req, res) => {
     const { title, description, stepsToReproduce, severity } = req.body;
@@ -84,10 +85,14 @@ const assignBug = async (req, res) => {
             return res.status(404).json({ message: 'Bug not found' });
         }
 
-        if (bug.status !== 'New') {
-            return res.status(422).json({
-                message: 'Only bugs with status New can be assigned'
-            });
+        const state = BugStateFactory.create(bug.status);
+
+        if (!state.allowsTransitionTo('Assigned')) {
+            return res.status(422).json({ message: state.refusalMessage('Assigned') });
+        }
+
+        if (!state.isAuthorisedFor('Assigned', req.user, bug)) {
+            return res.status(403).json({ message: state.permissionMessage('Assigned') });
         }
 
         bug.priority = priority;
@@ -116,16 +121,14 @@ const startWork = async (req, res) => {
             return res.status(404).json({ message: 'Bug not found' });
         }
 
-        if (!bug.assignee || bug.assignee.toString() !== req.user.id) {
-            return res.status(403).json({
-                message: 'Only the assigned developer can start work on this bug'
-            });
+        const state = BugStateFactory.create(bug.status);
+
+        if (!state.isAuthorisedFor('In Progress', req.user, bug)) {
+            return res.status(403).json({ message: state.permissionMessage('In Progress') });
         }
 
-        if (bug.status !== 'Assigned' && bug.status !== 'Reopened') {
-            return res.status(422).json({
-                message: 'Only assigned or reopened bugs can be moved to In Progress'
-            });
+        if (!state.allowsTransitionTo('In Progress')) {
+            return res.status(422).json({ message: state.refusalMessage('In Progress') });
         }
 
         bug.status = 'In Progress';
@@ -158,16 +161,14 @@ const resolveBug = async (req, res) => {
             return res.status(404).json({ message: 'Bug not found' });
         }
 
-        if (!bug.assignee || bug.assignee.toString() !== req.user.id) {
-            return res.status(403).json({
-                message: 'Only the assigned developer can resolve this bug'
-            });
+        const state = BugStateFactory.create(bug.status);
+
+        if (!state.isAuthorisedFor('Resolved', req.user, bug)) {
+            return res.status(403).json({ message: state.permissionMessage('Resolved') });
         }
 
-        if (bug.status !== 'In Progress') {
-            return res.status(422).json({
-                message: 'Only bugs in progress can be resolved'
-            });
+        if (!state.allowsTransitionTo('Resolved')) {
+            return res.status(422).json({ message: state.refusalMessage('Resolved') });
         }
 
         bug.resolutionNote = resolutionNote;
@@ -196,16 +197,14 @@ const verifyBug = async (req, res) => {
             return res.status(404).json({ message: 'Bug not found' });
         }
 
-        if (bug.reporter.toString() !== req.user.id) {
-            return res.status(403).json({
-                message: 'Only the reporter who raised this bug can verify it'
-            });
+        const state = BugStateFactory.create(bug.status);
+
+        if (!state.isAuthorisedFor('Closed', req.user, bug)) {
+            return res.status(403).json({ message: state.permissionMessage('Closed') });
         }
 
-        if (bug.status !== 'Resolved') {
-            return res.status(422).json({
-                message: 'Only resolved bugs can be verified'
-            });
+        if (!state.allowsTransitionTo('Closed')) {
+            return res.status(422).json({ message: state.refusalMessage('Closed') });
         }
 
         bug.verifiedAt = new Date();
@@ -239,16 +238,14 @@ const reopenBug = async (req, res) => {
             return res.status(404).json({ message: 'Bug not found' });
         }
 
-        if (bug.reporter.toString() !== req.user.id) {
-            return res.status(403).json({
-                message: 'Only the reporter who raised this bug can reopen it'
-            });
+        const state = BugStateFactory.create(bug.status);
+
+        if (!state.isAuthorisedFor('Reopened', req.user, bug)) {
+            return res.status(403).json({ message: state.permissionMessage('Reopened') });
         }
 
-        if (bug.status !== 'Resolved') {
-            return res.status(422).json({
-                message: 'Only resolved bugs can be reopened'
-            });
+        if (!state.allowsTransitionTo('Reopened')) {
+            return res.status(422).json({ message: state.refusalMessage('Reopened') });
         }
 
         bug.reopenReason = reopenReason;
@@ -276,16 +273,14 @@ const deleteBug = async (req, res) => {
             return res.status(404).json({ message: 'Bug not found' });
         }
 
-        if (bug.reporter.toString() !== req.user.id) {
-            return res.status(403).json({
-                message: 'Only the reporter who raised this bug can delete it'
-            });
+        const state = BugStateFactory.create(bug.status);
+
+        if (!state.isAuthorisedFor('Deleted', req.user, bug)) {
+            return res.status(403).json({ message: state.permissionMessage('Deleted') });
         }
 
-        if (bug.status !== 'New') {
-            return res.status(422).json({
-                message: 'This bug cannot be deleted because work has already begun on it'
-            });
+        if (!state.allowsTransitionTo('Deleted')) {
+            return res.status(422).json({ message: state.refusalMessage('Deleted') });
         }
 
         await bug.deleteOne();
