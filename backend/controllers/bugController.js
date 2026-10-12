@@ -1,5 +1,7 @@
 const Bug = require('../models/Bug');
 const BugStateFactory = require('../domain/states/BugStateFactory');
+const { EVENTS } = require('../domain/events/BugEventPublisher');
+const publishTransition = require('../domain/events/publishTransition');
 
 const createBug = async (req, res) => {
     const { title, description, stepsToReproduce, severity } = req.body;
@@ -95,10 +97,12 @@ const assignBug = async (req, res) => {
             return res.status(403).json({ message: state.permissionMessage('Assigned') });
         }
 
+        const previousStatus = bug.status;
         bug.priority = priority;
         bug.assignee = req.user.id;
         bug.status = 'Assigned';
         await bug.save();
+        await publishTransition(EVENTS.ASSIGN, { bug, previousStatus, actorId: req.user.id });
 
         const updated = await Bug.findById(bug._id)
             .populate('reporter', 'name')
@@ -131,8 +135,10 @@ const startWork = async (req, res) => {
             return res.status(422).json({ message: state.refusalMessage('In Progress') });
         }
 
+        const previousStatus = bug.status;
         bug.status = 'In Progress';
         await bug.save();
+        await publishTransition(EVENTS.START, { bug, previousStatus, actorId: req.user.id });
 
         const updated = await Bug.findById(bug._id)
             .populate('reporter', 'name')
@@ -171,10 +177,12 @@ const resolveBug = async (req, res) => {
             return res.status(422).json({ message: state.refusalMessage('Resolved') });
         }
 
+        const previousStatus = bug.status;
         bug.resolutionNote = resolutionNote;
         bug.resolvedAt = new Date();
         bug.status = 'Resolved';
         await bug.save();
+        await publishTransition(EVENTS.RESOLVE, { bug, previousStatus, actorId: req.user.id });
 
         const updated = await Bug.findById(bug._id)
             .populate('reporter', 'name')
@@ -207,9 +215,11 @@ const verifyBug = async (req, res) => {
             return res.status(422).json({ message: state.refusalMessage('Closed') });
         }
 
+        const previousStatus = bug.status;
         bug.verifiedAt = new Date();
         bug.status = 'Closed';
         await bug.save();
+        await publishTransition(EVENTS.VERIFY, { bug, previousStatus, actorId: req.user.id });
 
         const updated = await Bug.findById(bug._id)
             .populate('reporter', 'name')
@@ -248,9 +258,11 @@ const reopenBug = async (req, res) => {
             return res.status(422).json({ message: state.refusalMessage('Reopened') });
         }
 
+        const previousStatus = bug.status;
         bug.reopenReason = reopenReason;
         bug.status = 'Reopened';
         await bug.save();
+        await publishTransition(EVENTS.REOPEN, { bug, previousStatus, actorId: req.user.id });
 
         const updated = await Bug.findById(bug._id)
             .populate('reporter', 'name')
@@ -283,7 +295,11 @@ const deleteBug = async (req, res) => {
             return res.status(422).json({ message: state.refusalMessage('Deleted') });
         }
 
+        const previousStatus = bug.status;
         await bug.deleteOne();
+        await publishTransition(EVENTS.DELETE, {
+            bug, previousStatus, actorId: req.user.id, newStatus: 'Deleted'
+        });
         res.status(200).json({ message: 'Bug deleted' });
     } catch (error) {
         if (error.name === 'CastError') {
