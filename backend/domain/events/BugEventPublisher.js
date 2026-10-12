@@ -10,7 +10,7 @@ const EVENTS = Object.freeze({
 });
 
 class BugEventPublisher extends Subject {
-  publish(type, { actorId, bugId, bugTitle, previousStatus, newStatus }) {
+  publish(type, { actorId, bugId, bugTitle, reporterId, assigneeId, previousStatus, newStatus }) {
     if (!Object.values(EVENTS).includes(type)) {
       throw new Error(`Unknown bug event type: ${type}`);
     }
@@ -20,6 +20,8 @@ class BugEventPublisher extends Subject {
         actorId,
         bugId,
         bugTitle,
+        reporterId,
+        assigneeId,
         previousStatus,
         newStatus,
         timestamp: new Date(),
