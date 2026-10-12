@@ -5,6 +5,8 @@ function publishTransition(type, { bug, previousStatus, actorId, newStatus }) {
     actorId,
     bugId: bug._id,
     bugTitle: bug.title,
+    reporterId: bug.reporter,
+    assigneeId: bug.assignee,
     previousStatus,
     newStatus: newStatus ?? bug.status,
   });
