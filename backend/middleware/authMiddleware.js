@@ -1,4 +1,3 @@
-
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 
@@ -10,18 +9,25 @@ const requireAuth = async (req, res, next) => {
             token = req.headers.authorization.split(' ')[1];
             const decoded = jwt.verify(token, process.env.JWT_SECRET);
             req.user = await User.findById(decoded.id).select('-password');
-            next();
+
+            if (!req.user) {
+                return res.status(401).json({ message: 'Not authorized, user not found' });
+            }
+
+            return next();
         } catch (error) {
-            res.status(401).json({ message: 'Not authorized, token failed' });
+            return res.status(401).json({ message: 'Not authorized, token failed' });
         }
     }
 
-    if (!token) {
-        res.status(401).json({ message: 'Not authorized, no token' });
-    }
+    return res.status(401).json({ message: 'Not authorized, no token' });
 };
+
 const requireRole = (role) => {
     return (req, res, next) => {
+        if (!req.user) {
+            return res.status(401).json({ message: 'Not authorized' });
+        }
         if (req.user.role !== role) {
             return res.status(403).json({
                 message: `Not permitted. This action requires the ${role} role.`
