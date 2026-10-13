@@ -1,0 +1,1 @@
+module.exports = { PUBLIC_USER_FIELDS: 'name email role isActive createdAt' };
