@@ -1,34 +1,30 @@
-
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const requirePermission = require('./requirePermission');
 
 const requireAuth = async (req, res, next) => {
-    let token;
-
-    if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
-        try {
-            token = req.headers.authorization.split(' ')[1];
-            const decoded = jwt.verify(token, process.env.JWT_SECRET);
-            req.user = await User.findById(decoded.id).select('-password');
-            next();
-        } catch (error) {
-            res.status(401).json({ message: 'Not authorized, token failed' });
-        }
+    const header = req.headers.authorization;
+    if (!header || !header.startsWith('Bearer ')) {
+        return res.status(401).json({ message: 'Not authorized, no token' });
     }
 
-    if (!token) {
-        res.status(401).json({ message: 'Not authorized, no token' });
+    let user;
+    try {
+        const decoded = jwt.verify(header.split(' ')[1], process.env.JWT_SECRET);
+        user = await User.findById(decoded.id).select('-password');
+    } catch (error) {
+        return res.status(401).json({ message: 'Not authorized, token failed' });
     }
-};
-const requireRole = (role) => {
-    return (req, res, next) => {
-        if (req.user.role !== role) {
-            return res.status(403).json({
-                message: `Not permitted. This action requires the ${role} role.`
-            });
-        }
-        next();
-    };
+
+    if (!user) {
+        return res.status(401).json({ message: 'Not authorized, user not found' });
+    }
+    if (user.isActive === false) {
+        return res.status(401).json({ message: 'Account deactivated' });
+    }
+
+    req.user = user;
+    next();
 };
 
-module.exports = { requireAuth, requireRole };
+module.exports = { requireAuth, requirePermission };
