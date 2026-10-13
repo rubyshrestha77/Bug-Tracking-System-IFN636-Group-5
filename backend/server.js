@@ -3,6 +3,8 @@ const express = require('express');
 const dotenv = require('dotenv');
 const cors = require('cors');
 const connectDB = require('./config/db');
+const { publisher } = require('./domain/events/BugEventPublisher');
+const NotificationService = require('./domain/notifications/NotificationService');
 
 dotenv.config();
 
@@ -15,6 +17,7 @@ app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/bugs', require('./routes/bugRoutes'));
 app.use('/api/reports', require('./routes/reportRoutes'));
 
+publisher.subscribe(new NotificationService());
 // Export the app object for testing
 if (require.main === module) {
     connectDB();
