@@ -16,6 +16,9 @@ app.use("/api/bugs", require("./routes/bugRoutes"));
 app.use("/api/users", require("./routes/userRoutes"));
 app.use("/api/notifications", require("./routes/notificationRoutes"));
 
+const registerObservers = require('./domain/events/registerObservers');
+registerObservers();
+
 publisher.subscribe(new NotificationService());
 // Export the app object for testing
 if (require.main === module) {

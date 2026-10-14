@@ -1,11 +1,9 @@
-let expect;
-before(async () => {
-  ({ expect } = await import('chai'));
-});
+import { expect } from 'chai';
+import Subject from '../domain/events/Subject.js';
+import Observer from '../domain/events/Observer.js';
+import publisherModule from '../domain/events/BugEventPublisher.js';
 
-const Subject = require('../domain/events/Subject');
-const Observer = require('../domain/events/Observer');
-const { BugEventPublisher, EVENTS } = require('../domain/events/BugEventPublisher');
+const { BugEventPublisher, EVENTS } = publisherModule;
 
 class Spy extends Observer {
   constructor() {
@@ -23,7 +21,7 @@ class Broken extends Observer {
   }
 }
 
-describe('Subject / Observer (B1, NFR-02)', () => {
+describe('BTSG-37: Subject / Observer (FR-04, NFR-02)', () => {
   it('delivers an event to a subscriber', async () => {
     const subject = new Subject();
     const spy = new Spy();
@@ -79,7 +77,7 @@ describe('Subject / Observer (B1, NFR-02)', () => {
   });
 });
 
-describe('BugEventPublisher (B1)', () => {
+describe('BTSG-37: BugEventPublisher', () => {
   it('publishes a frozen event with a timestamp', async () => {
     const publisher = new BugEventPublisher();
     const spy = new Spy();
