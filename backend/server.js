@@ -14,6 +14,7 @@ app.use(express.json());
 app.use("/api/auth", require("./routes/authRoutes"));
 app.use("/api/bugs", require("./routes/bugRoutes"));
 app.use("/api/users", require("./routes/userRoutes"));
+app.use("/api/notifications", require("./routes/notificationRoutes"));
 
 publisher.subscribe(new NotificationService());
 // Export the app object for testing
