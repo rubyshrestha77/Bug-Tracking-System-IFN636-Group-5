@@ -3,8 +3,9 @@
 IFN636 Software Life Cycle Management — Assessment 1
 Ruby Shrestha — n12643572
 
-A web-based bug tracking system with two user roles. Reporters submit defects
-and verify fixes; Developers review, assign and resolve them.
+A web-based bug tracking system with three user roles. Reporters submit defects
+and verify fixes; Developers review, assign and resolve them; Admins manage user
+accounts.
 
 ## Tech Stack
 
@@ -25,11 +26,17 @@ All commands run from the repository root.
    - `MONGO_URI` — your MongoDB connection string
    - `JWT_SECRET` — any long random string
    - `PORT` — 5000
-4. Start both servers: `npm run start`
+4. Create the first admin (admins cannot self-register). With `ADMIN_EMAIL` and
+   `ADMIN_PASSWORD` set in your shell or in `backend/.env`, run
+   `node backend/scripts/seedAdmin.js`. The script also backfills `isActive` on
+   any existing users.
+5. Start both servers: `npm run start`
 
 Frontend runs on `localhost:3000`, backend on `localhost:5000`.
 
 For development with auto-restart on file changes, use `npm run dev` instead.
+
+Run the automated tests from the repository root with `npm test`.
 
 ## Demo Accounts
 
@@ -55,10 +62,21 @@ high-fidelity screens in `docs/wireframes/high-fidelity/`.
 A React single-page application communicates with an Express REST API over JSON.
 
 Authentication uses JSON Web Tokens issued at login and verified by `requireAuth`
-middleware on every protected route. Authorisation is layered: `requireRole`
-restricts endpoints to Reporters or Developers, and per-resource ownership checks
-ensure that only a bug's assignee can resolve it, and only its original reporter
-can verify, reopen or delete it.
+middleware on every protected route; deactivated accounts are rejected at login
+and at `requireAuth`. Authorisation is layered: a role class hierarchy decides
+which permissions each role holds, and per-resource ownership checks ensure that
+only a bug's assignee can resolve it, and only its original reporter can verify,
+reopen or delete it.
+
+### Role hierarchy
+
+`Role` is an abstract base class whose template method `can(user, permission)`
+runs the shared steps (account is active, user holds this role) and then calls
+the `hasPermission()` hook, which `AdminRole`, `ReporterRole` and `DeveloperRole`
+each override. `RoleFactory.create(name)` returns the matching role object, and
+`requirePermission(permission)` guards each route, so no middleware compares role
+strings. Adding a role means adding one class and one `RoleFactory.register` call.
+See `docs/design/role-hierarchy.md`.
 
 Bug state transitions are validated server-side before persisting, so the
 workflow cannot be bypassed by direct API calls. Data is persisted in MongoDB
@@ -77,14 +95,14 @@ Atlas via Mongoose, across two collections: `users` and `bugs`.
 
 ## Branch and Commit Conventions
 
-Work is tracked in Jira (project key `BTS`). Every branch and commit references
+Work is tracked in Jira (project key `BTSG`). Every branch and commit references
 its Jira issue so history maps directly to the backlog.
 
-**Branches:** `feature/BTS-<id>-<short-description>`
-Example: `feature/BTS-10-register-with-role-selection`
+**Branches:** `feature/BTSG-<id>-<short-description>`
+Example: `feature/BTSG-6-admin-views-users`
 
-**Commits:** `BTS-<id>: <imperative summary>`
-Example: `BTS-10: add User schema with role enum`
+**Commits:** `BTSG-<id>: <imperative summary>`
+Example: `BTSG-6: extend User schema with isActive`
 
 **Workflow:** feature branch → incremental commits → pull request → self-review
 → merge to `main`. History is never rewritten.
@@ -99,9 +117,10 @@ address, and the repository cloned to it as a development environment.
 ## Known Limitations
 
 - Session state is held in `localStorage`; there is no token refresh or expiry handling
-- Users self-register and select their own role; a production system would require administrator approval
+- Reporters and Developers self-register and select their own role; a production system would require administrator approval (Admins are created only with the seed script)
 - MongoDB Atlas network access is open to all IP addresses
 - Form validation messages appear below submit buttons rather than above
 - Bugs cannot be reassigned between developers once claimed
 - Closed bugs cannot be reopened; a recurring defect is raised as a new bug
-- No automated test suite
+- Two admins deactivating each other at the same instant could bypass the last-admin guard
+- `updateUserProfile` does not check for duplicate emails, so a clash returns a generic server error

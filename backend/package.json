@@ -4,7 +4,7 @@
   "description": "Backend for Bug Tracking System",
   "main": "server.js",
   "scripts": {
-    "test": "mocha",
+    "test": "mocha \"tests/**/*.test.mjs\"",
     "start": "node server.js",
     "dev": "nodemon server.js",
     "prod": "node server.js"
