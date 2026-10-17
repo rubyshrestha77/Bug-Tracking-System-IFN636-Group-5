@@ -14,6 +14,43 @@ const Bugs = () => {
   const hasActiveFilters =
   filters.status || filters.severity || filters.priority || filters.assignedToMe;
 
+
+  const handleExport = async (format) => {
+    try {
+      const params = { format };
+
+      if (filters.status) params.status = filters.status;
+      if (filters.severity) params.severity = filters.severity;
+      if (filters.priority) params.priority = filters.priority;
+      if (filters.assignedToMe) params.assignedToMe = 'true';
+
+      const response = await axiosInstance.get('/api/reports/export', {
+        headers: {
+          Authorization: `Bearer ${user.token}`,
+        },
+        params,
+        responseType: 'blob',
+      });
+
+      const blob = new Blob([response.data], {
+        type: format === 'csv' ? 'text/csv' : 'application/json',
+      });
+
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+
+      link.href = downloadUrl;
+      link.download = `bugs-report.${format}`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(downloadUrl);
+    } catch (error) {
+      setError(error.response?.data?.message || 'Failed to export bugs.');
+    }
+  };
+
+
   useEffect(() => {
     const fetchBugs = async () => {
       setLoading(true);
@@ -37,22 +74,6 @@ const Bugs = () => {
     };
     if (user) fetchBugs();
   }, [user, filters]);
-
-  useEffect(() => {
-    const fetchBugs = async () => {
-      try {
-        const response = await axiosInstance.get('/api/bugs', {
-          headers: { Authorization: `Bearer ${user.token}` },
-        });
-        setBugs(response.data);
-      } catch (error) {
-        setError(error.response?.data?.message || 'Failed to load bugs.');
-      } finally {
-        setLoading(false);
-      }
-    };
-    if (user) fetchBugs();
-  }, [user]);
 
   if (loading) return <div className="text-center mt-20">Loading…</div>;
 
@@ -117,6 +138,21 @@ const Bugs = () => {
             Clear filters
           </button>
         )}
+
+        <button
+          onClick={() => handleExport('csv')}
+          className="bg-green-600 text-white px-4 py-2 rounded text-sm font-semibold hover:bg-green-700"
+        >
+          Export CSV
+        </button>
+
+        <button
+          onClick={() => handleExport('json')}
+          className="bg-blue-600 text-white px-4 py-2 rounded text-sm font-semibold hover:bg-blue-700"
+        >
+          Export JSON
+        </button>
+
       </div>
       {/* <BugList bugs={bugs} /> */}
       <BugList bugs={bugs} hasActiveFilters={hasActiveFilters} onClearFilters={() => setFilters({ status: '', severity: '', priority: '', assignedToMe: false })} />

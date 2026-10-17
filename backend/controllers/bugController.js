@@ -37,23 +37,32 @@ const createBug = async (req, res) => {
 
 const getBugs = async (req, res) => {
   try {
-    const { status, severity, priority, assignedToMe } = req.query;
-    const filter = {};
-
-    if (status) filter.status = status;
-    if (severity) filter.severity = severity;
-    if (priority) filter.priority = priority;
-    if (assignedToMe === "true") filter.assignee = req.user.id;
+    const filter = buildBugFilter(req.query, req.user.id);
 
     const bugs = await Bug.find(filter)
       .populate("reporter", "name")
       .populate("assignee", "name")
       .sort({ createdAt: -1 });
 
-    res.status(200).json(bugs);
+    return res.status(200).json(bugs);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    return res.status(500).json({ message: error.message });
   }
+};
+
+const buildBugFilter = (query, userId) => {
+    const { status, severity, priority, assignedToMe } = query;
+    const filter = {};
+
+    if (status) filter.status = status;
+    if (severity) filter.severity = severity;
+    if (priority) filter.priority = priority;
+
+    if (assignedToMe === 'true') {
+        filter.assignee = userId;
+    }
+
+    return filter;
 };
 
 const getBugById = async (req, res) => {
@@ -378,4 +387,5 @@ module.exports = {
   reopenBug,
   deleteBug,
   listUsers,
+  buildBugFilter,
 };
