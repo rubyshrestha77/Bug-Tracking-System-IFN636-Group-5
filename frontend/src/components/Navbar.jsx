@@ -21,6 +21,7 @@ const Navbar = () => {
             <Link to="/bugs" className="mr-4">Home</Link>
             {user.role === 'reporter' && <Link to="/bugs/new" className="mr-4">Add Bug</Link>}
             {user.role === 'admin' && <Link to="/admin/users" className="mr-4">Users</Link>}
+            {user.role === 'admin' && <Link to="/admin/activity-log" className="mr-4">Activity Log</Link>}
             {user.role !== 'admin' && <NotificationBell />}
             <Link to="/profile" className="mr-4">
               <span className="text-sm">

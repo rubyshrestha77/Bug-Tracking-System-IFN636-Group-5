@@ -1,4 +1,3 @@
-// BTSG-39: tests for FR-04 and NFR-02 (activity log records transitions, immutably)
 import 'dotenv/config';
 import mongoose from 'mongoose';
 import { expect } from 'chai';
