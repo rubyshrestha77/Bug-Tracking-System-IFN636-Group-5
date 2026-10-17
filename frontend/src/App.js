@@ -8,6 +8,7 @@ import Bugs from './pages/Bugs';
 import BugDetail from './pages/BugDetail';
 import UserManagement from './pages/UserManagement';
 import ProtectedRoute from './components/ProtectedRoutes';
+import ActivityLog from './pages/ActivityLog';
 
 function App() {
   return (
@@ -22,6 +23,7 @@ function App() {
         <Route path="/bugs" element={<ProtectedRoute><Bugs/></ProtectedRoute>}/>
         <Route path="/bugs/:id" element={<ProtectedRoute><BugDetail /></ProtectedRoute>} />
         <Route path="/admin/users" element={<ProtectedRoute><UserManagement /></ProtectedRoute>} />
+        <Route path="/admin/activity-log" element={<ProtectedRoute><ActivityLog /></ProtectedRoute>} />
         <Route path="*" element={
           <div className="text-center mt-20">
             <p className="text-gray-600 mb-4">Page not found.</p>

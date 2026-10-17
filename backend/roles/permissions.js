@@ -9,4 +9,5 @@ module.exports = Object.freeze({
     BUG_DELETE: 'bug:delete',
     USERS_VIEW: 'users:view',
     USERS_MANAGE: 'users:manage',
+    ACTIVITY_LOG_VIEW: 'activity-log:view',
 });
