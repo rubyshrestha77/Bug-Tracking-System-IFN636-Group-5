@@ -1,6 +1,7 @@
 
 const Bug = require('../models/Bug');
 const ReportGeneratorFactory = require('../domain/reports/ReportGeneratorFactory');
+const { buildBugFilter } = require('./bugController');
 
 const generateReport = async (req, res) => {
     try {
@@ -15,10 +16,12 @@ const generateReport = async (req, res) => {
             });
         }
 
-        const bugs = await Bug.find({})
-            .populate('reporter', 'name')
-            .populate('assignee', 'name')
-            .sort({ createdAt: -1 });
+       const filter = buildBugFilter(req.query, req.user.id);
+
+       const bugs = await Bug.find(filter)
+           .populate('reporter', 'name')
+           .populate('assignee', 'name')
+           .sort({ createdAt: -1 });
 
         const generator =
             ReportGeneratorFactory.createGenerator(format);

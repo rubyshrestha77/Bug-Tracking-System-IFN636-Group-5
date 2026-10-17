@@ -15,6 +15,9 @@ app.use("/api/auth", require("./routes/authRoutes"));
 app.use("/api/bugs", require("./routes/bugRoutes"));
 app.use("/api/users", require("./routes/userRoutes"));
 app.use("/api/notifications", require("./routes/notificationRoutes"));
+app.use("/api/activity-log", require("./routes/activityLogRoutes"));
+app.use("/api/reports", require("./routes/reportRoutes"));
+
 
 const registerObservers = require('./domain/events/registerObservers');
 registerObservers();
