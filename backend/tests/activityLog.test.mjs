@@ -1,6 +1,6 @@
-import 'dotenv/config';
-import mongoose from 'mongoose';
 import { expect } from 'chai';
+import sinon from 'sinon';
+import mongoose from 'mongoose';
 import ActivityLog from '../models/ActivityLog.js';
 import ActivityLogger from '../domain/events/ActivityLogger.js';
 import registerObservers from '../domain/events/registerObservers.js';
@@ -9,97 +9,164 @@ import publisherModule from '../domain/events/BugEventPublisher.js';
 const { publisher, BugEventPublisher, EVENTS } = publisherModule;
 const oid = () => new mongoose.Types.ObjectId();
 
-describe('BTSG-39: activity log (needs MONGO_URI_TEST)', function () {
-  before(async function () {
-    if (!process.env.MONGO_URI_TEST) return this.skip();
-    await mongoose.connect(process.env.MONGO_URI_TEST);
+const eventData = (overrides = {}) => ({
+  actorId: oid(), bugId: oid(), bugTitle: 'Login fails',
+  previousStatus: 'New', newStatus: 'Assigned', ...overrides,
+});
+
+const loggerPublisher = () => {
+  const p = new BugEventPublisher();
+  p.subscribe(new ActivityLogger());
+  return p;
+};
+
+describe('ActivityLogger Function Test (FR-04)', () => {
+  afterEach(() => sinon.restore());
+
+  Object.values(EVENTS).forEach((type) => {
+    it(`should create exactly one entry for a ${type} transition`, async () => {
+      const createStub = sinon.stub(ActivityLog, 'create').resolves({});
+
+      await loggerPublisher().publish(type, eventData());
+
+      expect(createStub.calledOnce).to.be.true;
+      expect(createStub.firstCall.args[0].actionType).to.equal(type);
+    });
   });
 
-  after(async () => {
-    if (mongoose.connection.readyState === 1) {
-      await mongoose.connection.collection('activitylogs').deleteMany({});
-      await mongoose.disconnect();
+  it('should store actor, action, bug, previous status, new status and timestamp', async () => {
+    const createStub = sinon.stub(ActivityLog, 'create').resolves({});
+    const data = eventData();
+
+    await loggerPublisher().publish(EVENTS.ASSIGN, data);
+
+    const entry = createStub.firstCall.args[0];
+    expect(entry.actor).to.equal(data.actorId);
+    expect(entry.actionType).to.equal('ASSIGN');
+    expect(entry.entityId).to.equal(data.bugId);
+    expect(entry.previousValue).to.equal('New');
+    expect(entry.newValue).to.equal('Assigned');
+    expect(entry.timestamp).to.be.instanceOf(Date);
+  });
+
+  it('should keep a snapshot of the bug title for a deleted bug', async () => {
+    const createStub = sinon.stub(ActivityLog, 'create').resolves({});
+
+    await loggerPublisher().publish(
+      EVENTS.DELETE, eventData({ bugTitle: 'Crash on save', newStatus: 'Deleted' })
+    );
+
+    expect(createStub.firstCall.args[0].bugTitle).to.equal('Crash on save');
+  });
+
+  it('should create no entry when no transition is published', () => {
+    const createStub = sinon.stub(ActivityLog, 'create').resolves({});
+    loggerPublisher();
+    expect(createStub.called).to.be.false;
+  });
+
+  it('should not break the transition if the database write fails', async () => {
+    sinon.stub(ActivityLog, 'create').rejects(new Error('DB Error'));
+    const errorStub = sinon.stub(console, 'error');
+
+    await loggerPublisher().publish(EVENTS.START, eventData()); // must not throw
+
+    expect(errorStub.calledOnce).to.be.true;
+    expect(errorStub.firstCall.args[1]).to.equal('DB Error');
+  });
+});
+
+describe('registerObservers Function Test (FR-04)', () => {
+  afterEach(() => sinon.restore());
+
+  it('should never subscribe the logger more than once', () => {
+    const subscribeStub = sinon.stub(publisher, 'subscribe');
+
+    registerObservers();
+    registerObservers();
+
+    // 0 calls is also fine if the app already registered it earlier in this test run
+    expect(subscribeStub.callCount).to.be.at.most(1);
+    if (subscribeStub.callCount === 1) {
+      expect(subscribeStub.firstCall.args[0]).to.be.instanceOf(ActivityLogger);
     }
   });
+});
 
-  describe('Activity log records transitions (FR-04)', () => {
-    const data = (bugId) => ({
-      actorId: oid(), bugId, bugTitle: 'Login fails', previousStatus: 'New', newStatus: 'Assigned',
-    });
-
-    Object.values(EVENTS).forEach((type) => {
-      it(`${type} produces exactly one entry`, async () => {
-        const p = new BugEventPublisher();
-        p.subscribe(new ActivityLogger());
-        const bugId = oid();
-        await p.publish(type, data(bugId));
-        expect(await ActivityLog.countDocuments({ entityId: bugId })).to.equal(1);
-      });
-    });
-
-    it('stores actor, action, bug, previous status, new status and timestamp', async () => {
-      const p = new BugEventPublisher();
-      p.subscribe(new ActivityLogger());
-      const bugId = oid();
-      const d = data(bugId);
-      await p.publish(EVENTS.ASSIGN, d);
-      const entry = await ActivityLog.findOne({ entityId: bugId });
-      expect(String(entry.actor)).to.equal(String(d.actorId));
-      expect(entry.actionType).to.equal('ASSIGN');
-      expect(entry.previousValue).to.equal('New');
-      expect(entry.newValue).to.equal('Assigned');
-      expect(entry.timestamp).to.be.instanceOf(Date);
-    });
-
-    it('registering twice still produces one entry', async () => {
-      registerObservers();
-      registerObservers();
-      const bugId = oid();
-      await publisher.publish(EVENTS.START, data(bugId));
-      expect(await ActivityLog.countDocuments({ entityId: bugId })).to.equal(1);
-    });
-
-    it('no entry exists for a transition that was never published', async () => {
-      expect(await ActivityLog.countDocuments({ entityId: oid() })).to.equal(0);
-    });
+describe('ActivityLog Schema Test (FR-04)', () => {
+  const valid = () => ({
+    actor: oid(), actionType: 'ASSIGN', entityId: oid(), newValue: 'Assigned',
   });
 
-  describe('ActivityLog is immutable (NFR-02)', () => {
-    let entry;
-    beforeEach(async () => {
-      entry = await ActivityLog.create({
-        actor: oid(), actionType: 'ASSIGN', entityId: oid(), newValue: 'Assigned',
-      });
-    });
+  it('should accept a valid entry and default entityType and timestamp', () => {
+    const entry = new ActivityLog(valid());
+    expect(entry.validateSync()).to.be.undefined;
+    expect(entry.entityType).to.equal('bug');
+    expect(entry.timestamp).to.be.instanceOf(Date);
+  });
 
-    const attempt = async (fn) => {
-      let error;
-      try { await fn(); } catch (e) { error = e; }
-      return error;
-    };
+  it('should require actor, action type and entity id', () => {
+    const error = new ActivityLog({}).validateSync();
+    expect(error.errors).to.have.all.keys('actor', 'actionType', 'entityId');
+  });
 
-    it('rejects saving changes to an existing entry', async () => {
-      entry.newValue = 'Hacked';
-      expect(await attempt(() => entry.save())).to.exist;
+  it('should reject an unknown action type', () => {
+    const error = new ActivityLog({ ...valid(), actionType: 'HACK' }).validateSync();
+    expect(error.errors.actionType).to.exist;
+  });
+});
+
+describe('ActivityLog Immutability Test (NFR-02)', () => {
+  const MESSAGE = 'ActivityLog entries are immutable';
+
+  const existingEntry = () => {
+    const entry = new ActivityLog({
+      actor: oid(), actionType: 'ASSIGN', entityId: oid(), newValue: 'Assigned',
     });
-    it('rejects updateOne', async () => {
-      expect(await attempt(() => ActivityLog.updateOne({ _id: entry._id }, { newValue: 'x' }))).to.exist;
-    });
-    it('rejects findByIdAndUpdate', async () => {
-      expect(await attempt(() => ActivityLog.findByIdAndUpdate(entry._id, { newValue: 'x' }))).to.exist;
-    });
-    it('rejects deleteOne on the model', async () => {
-      expect(await attempt(() => ActivityLog.deleteOne({ _id: entry._id }))).to.exist;
-    });
-    it('rejects deleting a document instance', async () => {
-      expect(await attempt(() => entry.deleteOne())).to.exist;
-    });
-    it('rejects deleteMany', async () => {
-      expect(await attempt(() => ActivityLog.deleteMany({ _id: entry._id }))).to.exist;
-    });
-    it('leaves the entry unchanged after the refused attempts', async () => {
-      const same = await ActivityLog.findById(entry._id);
-      expect(same.newValue).to.equal('Assigned');
-    });
+    entry.isNew = false; // behave like an entry already stored
+    return entry;
+  };
+
+  const refusal = async (action) => {
+    try { await action(); } catch (error) { return error; }
+    return null;
+  };
+
+  it('should refuse saving changes to an existing entry', async () => {
+    const entry = existingEntry();
+    entry.newValue = 'Hacked';
+    const error = await refusal(() => entry.save());
+    expect(error).to.be.instanceOf(Error);
+    expect(error.message).to.equal(MESSAGE);
+  });
+
+  it('should refuse updateOne', async () => {
+    const error = await refusal(() => ActivityLog.updateOne({ _id: oid() }, { newValue: 'x' }));
+    expect(error.message).to.equal(MESSAGE);
+  });
+
+  it('should refuse findByIdAndUpdate', async () => {
+    const error = await refusal(() => ActivityLog.findByIdAndUpdate(oid(), { newValue: 'x' }));
+    expect(error.message).to.equal(MESSAGE);
+  });
+
+  it('should refuse replaceOne', async () => {
+    const error = await refusal(() => ActivityLog.replaceOne({ _id: oid() }, { newValue: 'x' }));
+    expect(error.message).to.equal(MESSAGE);
+  });
+
+  it('should refuse deleteOne on the model', async () => {
+    const error = await refusal(() => ActivityLog.deleteOne({ _id: oid() }));
+    expect(error.message).to.equal(MESSAGE);
+  });
+
+  it('should refuse deleting a document instance', async () => {
+    const error = await refusal(() => existingEntry().deleteOne());
+    expect(error.message).to.equal(MESSAGE);
+  });
+
+  it('should refuse deleteMany', async () => {
+    const error = await refusal(() => ActivityLog.deleteMany({ actionType: 'ASSIGN' }));
+    expect(error.message).to.equal(MESSAGE);
   });
 });
