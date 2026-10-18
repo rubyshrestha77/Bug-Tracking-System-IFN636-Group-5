@@ -13,6 +13,7 @@ import ActivityLog from './pages/ActivityLog';
 function App() {
   return (
     <Router>
+      {console.log('Instance:', process.env.REACT_APP_INSTANCE)}
       <Navbar />
       <Routes>
         <Route path="/" element={<Navigate to="/bugs" replace />} />
