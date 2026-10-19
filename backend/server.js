@@ -11,15 +11,6 @@ const app = express();
 
 app.use(cors());
 app.use(express.json());
-
-app.get("/api/health", (req, res) => {
-  res.status(200).json({
-    status: "ok",
-    service: "bug-tracking-backend",
-    timestamp: new Date().toISOString()
-  });
-});
-
 app.use("/api/auth", require("./routes/authRoutes"));
 app.use("/api/bugs", require("./routes/bugRoutes"));
 app.use("/api/users", require("./routes/userRoutes"));
@@ -27,15 +18,14 @@ app.use("/api/notifications", require("./routes/notificationRoutes"));
 app.use("/api/activity-log", require("./routes/activityLogRoutes"));
 app.use("/api/reports", require("./routes/reportRoutes"));
 
-const registerObservers = require("./domain/events/registerObservers");
+
+const registerObservers = require('./domain/events/registerObservers');
 registerObservers();
 
 publisher.subscribe(new NotificationService());
-
 // Export the app object for testing
 if (require.main === module) {
   connectDB();
-
   // If the file is run directly, start the server
   const PORT = process.env.PORT || 5001;
   app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
