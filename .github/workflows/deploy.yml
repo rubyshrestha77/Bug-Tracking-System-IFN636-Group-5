@@ -18,12 +18,11 @@ jobs:
     steps:
       - name: Check secrets
         run: |
-          echo "host length: ${#H}"
-          echo "first char: [${H:0:1}]"
-          echo "last char: [${H: -1}]"
+          echo "host: $H"
+          echo "user: $U"
+          echo "path: $P"
           echo "key length: ${#K}"
-          echo "user length: ${#U}"
-          echo "path length: ${#P}"
+          echo "key starts: ${K:0:30}"
         env:
           H: ${{ secrets[format('EC2_HOST_{0}', matrix.instance)] }}
           K: ${{ secrets[format('EC2_SSH_KEY_{0}', matrix.instance)] }}
