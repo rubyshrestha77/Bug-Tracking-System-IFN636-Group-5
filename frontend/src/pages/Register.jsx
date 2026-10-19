@@ -12,7 +12,7 @@ const Register = () => {
     e.preventDefault();
     setError('');
     try {
-      await axiosInstance.post('/api/auth/register', formData);
+      await axiosInstance.post('/auth/register', formData);
       alert('Registration successful. Please log in.');
       navigate('/login');
     } catch (error) {

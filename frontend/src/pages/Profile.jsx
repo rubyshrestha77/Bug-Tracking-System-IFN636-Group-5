@@ -17,7 +17,7 @@ const Profile = () => {
     const fetchProfile = async () => {
       setLoading(true);
       try {
-        const response = await axiosInstance.get('/api/auth/profile', {
+        const response = await axiosInstance.get('/auth/profile', {
           headers: { Authorization: `Bearer ${user.token}` },
         });
         setFormData({
@@ -40,7 +40,7 @@ const Profile = () => {
     setError('');
     setSuccess('');
     try {
-      await axiosInstance.put('/api/auth/profile', formData, {
+      await axiosInstance.put('/auth/profile', formData, {
         headers: { Authorization: `Bearer ${user.token}` },
       });
       setSuccess('Profile updated successfully!');

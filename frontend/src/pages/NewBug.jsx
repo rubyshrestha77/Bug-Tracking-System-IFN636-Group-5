@@ -18,7 +18,7 @@ const NewBug = () => {
     e.preventDefault();
     setError('');
     try {
-      await axiosInstance.post('/api/bugs', formData, {
+      await axiosInstance.post('/bugs', formData, {
         headers: { Authorization: `Bearer ${user.token}` },
       });
       navigate('/bugs');

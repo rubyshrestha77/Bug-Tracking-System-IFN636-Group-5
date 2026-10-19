@@ -24,7 +24,7 @@ const Bugs = () => {
       if (filters.priority) params.priority = filters.priority;
       if (filters.assignedToMe) params.assignedToMe = 'true';
 
-      const response = await axiosInstance.get('/api/reports/export', {
+      const response = await axiosInstance.get('/reports/export', {
         headers: {
           Authorization: `Bearer ${user.token}`,
         },
@@ -61,7 +61,7 @@ const Bugs = () => {
         if (filters.priority) params.priority = filters.priority;
         if (filters.assignedToMe) params.assignedToMe = 'true';
 
-        const response = await axiosInstance.get('/api/bugs', {
+        const response = await axiosInstance.get('/bugs', {
           headers: { Authorization: `Bearer ${user.token}` },
           params,
         });

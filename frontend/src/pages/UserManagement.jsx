@@ -46,7 +46,7 @@ const UserManagement = () => {
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const response = await axiosInstance.get('/api/users', {
+        const response = await axiosInstance.get('/users', {
           headers: { Authorization: `Bearer ${user.token}` },
         });
         setUsers(response.data);
@@ -75,7 +75,7 @@ const UserManagement = () => {
     setBusyId(target._id);
     try {
       const response = await axiosInstance.patch(
-        `/api/users/${target._id}/status`,
+        `/users/${target._id}/status`,
         { isActive: next },
         { headers: { Authorization: `Bearer ${user.token}` } }
       );

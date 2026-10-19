@@ -40,7 +40,7 @@ const ActivityLog = () => {
   useEffect(() => {
     if (!isAdmin) return;
     axiosInstance
-      .get('/api/users', { headers: { Authorization: `Bearer ${user.token}` } })
+      .get('/users', { headers: { Authorization: `Bearer ${user.token}` } })
       .then((res) => setUsers(Array.isArray(res.data) ? res.data : []))
       .catch(() => setUsers([]));
   }, [isAdmin, user]);
@@ -54,7 +54,7 @@ const ActivityLog = () => {
       Object.entries(applied).forEach(([key, value]) => {
         if (value) params[key] = value;
       });
-      const response = await axiosInstance.get('/api/activity-log', {
+      const response = await axiosInstance.get('/activity-log', {
         params,
         headers: { Authorization: `Bearer ${user.token}` },
       });
