@@ -30,6 +30,14 @@ jobs:
           U: ${{ secrets.EC2_USER }}
           P: ${{ secrets.EC2_PATH }}
 
+      - name: Test SSH connectivity
+        run: |
+          timeout 10 bash -c '</dev/tcp/$H/22' \
+            && echo "Port 22 is reachable" \
+            || { echo "Port 22 is unreachable"; exit 1; }
+        env:
+          H: ${{ secrets[format('EC2_HOST_{0}', matrix.instance)] }}
+
       - name: Deploy over SSH
         uses: appleboy/ssh-action@v1.0.3
         with:
