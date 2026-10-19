@@ -10,7 +10,7 @@ export const useNotifications = () => {
   const fetchNotifications = useCallback(async () => {
     if (!user) return;
     try {
-      const response = await axiosInstance.get("/api/notifications", {
+      const response = await axiosInstance.get("/notifications", {
         headers: { Authorization: `Bearer ${user.token}` },
       });
       setNotifications(response.data);
@@ -27,7 +27,7 @@ export const useNotifications = () => {
 
   const markRead = async (id) => {
     await axiosInstance.patch(
-      `/api/notifications/${id}/read`,
+      `/notifications/${id}/read`,
       {},
       {
         headers: { Authorization: `Bearer ${user.token}` },
@@ -40,7 +40,7 @@ export const useNotifications = () => {
 
   const markAllRead = async () => {
     await axiosInstance.patch(
-      "/api/notifications/read-all",
+      "/notifications/read-all",
       {},
       {
         headers: { Authorization: `Bearer ${user.token}` },

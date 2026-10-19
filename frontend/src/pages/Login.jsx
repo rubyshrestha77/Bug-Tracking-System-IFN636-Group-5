@@ -14,7 +14,7 @@ const Login = () => {
     e.preventDefault();
     setError('');    
     try {
-        const response = await axiosInstance.post('/api/auth/login', formData);
+        const response = await axiosInstance.post('/auth/login', formData);
         login(response.data);
         navigate(response.data.role === 'admin' ? '/admin/users' : '/bugs');
     } catch (error) {

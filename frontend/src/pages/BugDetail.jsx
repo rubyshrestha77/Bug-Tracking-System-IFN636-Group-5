@@ -34,7 +34,7 @@ const BugDetail = () => {
   setActionError('');
   try {
     const response = await axiosInstance.patch(
-      `/api/bugs/${id}/assign`,
+      `/bugs/${id}/assign`,
       { priority },
       { headers: { Authorization: `Bearer ${user.token}` } }
     );
@@ -48,7 +48,7 @@ const BugDetail = () => {
     setActionError('');
     try {
       const response = await axiosInstance.patch(
-        `/api/bugs/${id}/start`, {},
+        `/bugs/${id}/start`, {},
         { headers: { Authorization: `Bearer ${user.token}` } }
       );
       setBug(response.data);
@@ -61,7 +61,7 @@ const BugDetail = () => {
     setActionError('');
     try {
       const response = await axiosInstance.patch(
-        `/api/bugs/${id}/resolve`,
+        `/bugs/${id}/resolve`,
         { resolutionNote },
         { headers: { Authorization: `Bearer ${user.token}` } }
       );
@@ -76,7 +76,7 @@ const BugDetail = () => {
     setActionError('');
     try {
       const response = await axiosInstance.patch(
-        `/api/bugs/${id}/verify`, {},
+        `/bugs/${id}/verify`, {},
         { headers: { Authorization: `Bearer ${user.token}` } }
       );
       setBug(response.data);
@@ -89,7 +89,7 @@ const BugDetail = () => {
     setActionError('');
     try {
       const response = await axiosInstance.patch(
-        `/api/bugs/${id}/reopen`,
+        `/bugs/${id}/reopen`,
         { reopenReason },
         { headers: { Authorization: `Bearer ${user.token}` } }
       );
@@ -104,7 +104,7 @@ const BugDetail = () => {
   if (!window.confirm('Delete this bug report? This cannot be undone.')) return;
   setActionError('');
   try {
-    await axiosInstance.delete(`/api/bugs/${id}`, {
+    await axiosInstance.delete(`/bugs/${id}`, {
       headers: { Authorization: `Bearer ${user.token}` },
     });
     navigate('/bugs');
@@ -116,7 +116,7 @@ const BugDetail = () => {
   useEffect(() => {
     const fetchBug = async () => {
       try {
-        const response = await axiosInstance.get(`/api/bugs/${id}`, {
+        const response = await axiosInstance.get(`/bugs/${id}`, {
           headers: { Authorization: `Bearer ${user.token}` },
         });
         setBug(response.data);
