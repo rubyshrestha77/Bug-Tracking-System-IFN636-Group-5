@@ -2,7 +2,8 @@ module.exports = {
   apps: [
     {
       name: 'bugtracking-backend',
-      script: './backend/server.js',
+      script: './server.js',
+      cwd: './backend',
       instances: 1,
       exec_mode: 'fork',
       autorestart: true,
@@ -11,8 +12,8 @@ module.exports = {
       env: {
         NODE_ENV: 'production'
       },
-      error_file: './logs/error.log',
-      out_file: './logs/out.log',
+      error_file: '../logs/error.log',
+      out_file: '../logs/out.log',
       time: true
     }
   ]
