@@ -11,6 +11,15 @@ const app = express();
 
 app.use(cors());
 app.use(express.json());
+
+app.get('/api/health', (req, res) => {
+    res.status(200).json({
+        status: 'ok',
+        instance: process.env.INSTANCE_NAME || 'unknown',
+        uptime: process.uptime()
+    });
+});
+
 app.use("/api/auth", require("./routes/authRoutes"));
 app.use("/api/bugs", require("./routes/bugRoutes"));
 app.use("/api/users", require("./routes/userRoutes"));
