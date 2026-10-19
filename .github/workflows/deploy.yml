@@ -7,43 +7,41 @@ on:
 
 jobs:
   deploy:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.instance }}
     strategy:
       fail-fast: false
       matrix:
-        instance: [ 1, 2 ]
+        instance: [ instance-1, instance-2 ]
 
-    name: Deploy to instance-${{ matrix.instance }}
+    name: Deploy to ${{ matrix.instance }}
+
+    env:
+      APP_DIR: /home/ubuntu/Bug-Tracking-System-IFN636-Group-5
 
     steps:
-      - name: Check secrets
+      - name: Pull latest code
         run: |
-          echo "host: $H"
-          echo "user: $U"
-          echo "path: $P"
-          echo "key length: ${#K}"
-          echo "key starts: ${K:0:30}"
-        env:
-          H: ${{ secrets[format('EC2_HOST_{0}', matrix.instance)] }}
-          K: ${{ secrets[format('EC2_SSH_KEY_{0}', matrix.instance)] }}
-          U: ${{ secrets.EC2_USER }}
-          P: ${{ secrets.EC2_PATH }}
+          cd $APP_DIR
+          git fetch origin main
+          git reset --hard origin/main
 
-      - name: Test SSH connectivity
-        run: nc -zv -w 10 $H 22
-        env:
-          H: ${{ secrets[format('EC2_HOST_{0}', matrix.instance)] }}
+      - name: Install dependencies
+        run: |
+          cd $APP_DIR
+          npm run install-all
 
-      - name: Deploy over SSH
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets[format('EC2_HOST_{0}', matrix.instance)] }}
-          username: ${{ secrets.EC2_USER }}
-          key: ${{ secrets[format('EC2_SSH_KEY_{0}', matrix.instance)] }}
-          script: |
-            cd ${{ secrets.EC2_PATH }}
-            git pull origin main
-            npm run install-all
-            npm run build --prefix frontend
-            pm2 reload ecosystem.config.js --update-env
-            pm2 save
+      - name: Build frontend
+        run: |
+          cd $APP_DIR
+          npm run build --prefix frontend
+
+      - name: Reload application
+        run: |
+          cd $APP_DIR
+          pm2 reload ecosystem.config.js --update-env
+          pm2 save
+
+      - name: Verify health
+        run: |
+          sleep 5
+          curl -f http://localhost:5001/api/health
