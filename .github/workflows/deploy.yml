@@ -11,23 +11,17 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - name: instance-1
-            host: ${{ secrets.EC2_HOST_1 }}
-            key: ${{ secrets.EC2_SSH_KEY_1 }}
-          - name: instance-2
-            host: ${{ secrets.EC2_HOST_2 }}
-            key: ${{ secrets.EC2_SSH_KEY_2 }}
+        instance: [ 1, 2 ]
 
-    name: Deploy to ${{ matrix.name }}
+    name: Deploy to instance-${{ matrix.instance }}
 
     steps:
       - name: Deploy over SSH
         uses: appleboy/ssh-action@v1.0.3
         with:
-          host: ${{ matrix.host }}
+          host: ${{ secrets[format('EC2_HOST_{0}', matrix.instance)] }}
           username: ${{ secrets.EC2_USER }}
-          key: ${{ matrix.key }}
+          key: ${{ secrets[format('EC2_SSH_KEY_{0}', matrix.instance)] }}
           script: |
             cd ${{ secrets.EC2_PATH }}
             git pull origin main
