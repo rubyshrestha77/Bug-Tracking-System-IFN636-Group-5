@@ -9,11 +9,27 @@ import BugDetail from './pages/BugDetail';
 import UserManagement from './pages/UserManagement';
 import ProtectedRoute from './components/ProtectedRoutes';
 import ActivityLog from './pages/ActivityLog';
+import axiosInstance from './axiosConfig';
+import { useEffect } from 'react';
 
 function App() {
+  useEffect(() => {
+    if (process.env.REACT_APP_INSTANCE) {
+      console.log('Instance name:', process.env.REACT_APP_INSTANCE);
+      return;
+    }
+    axiosInstance
+      .get('/api/health')
+      .then((response) => {
+        console.log('Instance name:', response.data.instance);
+      })
+      .catch((error) => {
+        console.error('Failed to fetch instance name:', error);
+      });
+  }, []);
+  
   return (
     <Router>
-      {console.log('Instance name:', process.env.REACT_APP_INSTANCE)}
       <Navbar />
       <Routes>
         <Route path="/" element={<Navigate to="/bugs" replace />} />
