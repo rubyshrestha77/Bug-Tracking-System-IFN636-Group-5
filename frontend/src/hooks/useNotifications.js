@@ -21,9 +21,16 @@ export const useNotifications = () => {
     }
   }, [user]);
 
-  useEffect(() => {
+    useEffect(() => {
     fetchNotifications();
   }, [fetchNotifications]);
+
+  // Poll so notifications arriving in the background appear without a refresh
+  useEffect(() => {
+    if (!user) return;
+    const id = setInterval(fetchNotifications, 15000);
+    return () => clearInterval(id);
+  }, [user, fetchNotifications]);
 
   const markRead = async (id) => {
     await axiosInstance.patch(
