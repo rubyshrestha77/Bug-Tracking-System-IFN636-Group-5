@@ -19,7 +19,7 @@ function App() {
       return;
     }
     axiosInstance
-      .get('/api/health')
+      .get('/health')
       .then((response) => {
         console.log('Instance name:', response.data.instance);
       })
@@ -27,7 +27,7 @@ function App() {
         console.error('Failed to fetch instance name:', error);
       });
   }, []);
-  
+
   return (
     <Router>
       <Navbar />
