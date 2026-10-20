@@ -2,6 +2,10 @@
 
 IFN636 Software Life Cycle Management — Assessment 2
 Group 5
+- Adesh Pillay: n12763144
+- Hansa Madduma Arachchige:  n12628743
+- Jahnviben Chaudhary: n12635308
+- Ruby Shrestha: n12643572
 
 A web-based bug tracking system with three user roles. Reporters submit defects
 and verify fixes; Developers review, assign and resolve them; Administrators
@@ -63,7 +67,7 @@ Run the automated tests from the repository root with `npm test`.
 |------|-------|----------|
 | Reporter | reporter@demo.com | password123 |
 | Developer | developer@demo.com | password123 |
-| Administrator | admin123@demo.com | 0123456789 |
+| Administrator | admin@demo.com | 123456789 |
 
 Reporter and Developer accounts are not seeded automatically — register them
 through the application, selecting the role at registration. The administrator
